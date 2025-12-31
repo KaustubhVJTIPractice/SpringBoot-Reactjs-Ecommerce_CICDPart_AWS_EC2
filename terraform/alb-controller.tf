@@ -1,6 +1,7 @@
 # 1) IRSA Role for ALB controller
 module "alb_irsa" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "5.39.0"   # IMPORTANT
 
   role_name = "ecommerce-eks-alb-controller-role"
 
