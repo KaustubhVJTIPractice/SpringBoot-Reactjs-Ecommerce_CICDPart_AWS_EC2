@@ -52,7 +52,7 @@ pipeline {
                   -n kube-system --timeout=180s
 
                 # Apply Ingress
-                kubectl apply -f k8s/ingress/ingress.yaml -n $NAMESPACE
+                kubectl apply -f k8s/ingress/alb-ingress.yaml -n $NAMESPACE
                 '''
             }
         }
