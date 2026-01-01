@@ -17,57 +17,66 @@ pipeline {
 
         stage('Configure kubectl') {
             steps {
-                sh """
+                sh '''
                 aws eks update-kubeconfig \
-                  --region ${AWS_REGION} \
-                  --name ${CLUSTER_NAME}
-                """
+                  --region $AWS_REGION \
+                  --name $CLUSTER_NAME
+                '''
             }
         }
 
+
         stage('Deploy Kubernetes Resources') {
             steps {
-                sh """
-                # Namespace
-                kubectl apply -f k8s/namespace.yaml
+                sh '''
+                # Ensure namespace exists (Terraform-safe)
+                kubectl get ns $NAMESPACE || kubectl create ns $NAMESPACE
 
-                # Secrets
-                kubectl apply -f k8s/secrets/rds-secret.yaml -n ${NAMESPACE}
+                # Apply RDS secrets
+                kubectl apply -f k8s/secrets/rds-secret.yaml -n $NAMESPACE
 
-                # Backend
-                kubectl apply -f k8s/backend/backend-deployment.yaml -n ${NAMESPACE}
-                kubectl apply -f k8s/backend/backend-service.yaml -n ${NAMESPACE}
+                # Backend deployment
+                kubectl apply -f k8s/backend/backend-deployment.yaml -n $NAMESPACE
+                kubectl apply -f k8s/backend/backend-service.yaml -n $NAMESPACE
 
-                # Frontend
-                kubectl apply -f k8s/frontend/frontend-deployment.yaml -n ${NAMESPACE}
-                kubectl apply -f k8s/frontend/frontend-service.yaml -n ${NAMESPACE}
+                # Frontend deployment
+                kubectl apply -f k8s/frontend/frontend-deployment.yaml -n $NAMESPACE
+                kubectl apply -f k8s/frontend/frontend-service.yaml -n $NAMESPACE
 
-                # Ingress (ALB)
-                kubectl apply -f k8s/ingress/ingress.yaml -n ${NAMESPACE}
-                """
+                # Force new image pull from ECR
+                kubectl rollout restart deployment/backend-deployment -n $NAMESPACE
+                kubectl rollout restart deployment/frontend-deployment -n $NAMESPACE
+
+                # Wait for ALB controller (created via Terraform IRSA)
+                kubectl wait --for=condition=Available deployment/aws-load-balancer-controller \
+                  -n kube-system --timeout=180s
+
+                # Apply Ingress
+                kubectl apply -f k8s/ingress/ingress.yaml -n $NAMESPACE
+                '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh """
-                kubectl rollout status deployment/backend-deployment -n ${NAMESPACE}
-                kubectl rollout status deployment/frontend-deployment -n ${NAMESPACE}
+                sh '''
+                kubectl rollout status deployment/backend-deployment -n $NAMESPACE
+                kubectl rollout status deployment/frontend-deployment -n $NAMESPACE
 
-                kubectl get pods -n ${NAMESPACE}
-                kubectl get svc -n ${NAMESPACE}
-                kubectl get ingress -n ${NAMESPACE}
-                """
+                kubectl get pods -n $NAMESPACE
+                kubectl get svc -n $NAMESPACE
+                kubectl get ingress -n $NAMESPACE
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "✅ CD completed successfully – app deployed on EKS (EC2)"
+            echo "✅ CD completed successfully – app deployed on EKS"
         }
         failure {
-            echo "❌ CD failed – check kubectl logs and Jenkins output"
+            echo "❌ CD failed – check Jenkins logs & kubectl output"
         }
     }
 }
