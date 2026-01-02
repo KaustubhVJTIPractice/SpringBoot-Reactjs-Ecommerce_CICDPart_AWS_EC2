@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "/api",
+  baseURL: "/api",    // ALB routes this to backend
 });
-delete API.defaults.headers.common["Authorization"];
+
 export default API;
+
