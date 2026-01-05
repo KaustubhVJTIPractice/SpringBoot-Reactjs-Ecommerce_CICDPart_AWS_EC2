@@ -24,29 +24,27 @@ const AddProduct = () => {
     // setProduct({...product, image: e.target.files[0]})
   };
 
-  const submitHandler = (event) => {
+  const submitHandler = async (event) => {
     event.preventDefault();
+  
     const formData = new FormData();
-    formData.append("imageFile", image);
+    formData.append("image", image);
     formData.append(
       "product",
       new Blob([JSON.stringify(product)], { type: "application/json" })
     );
-
-    axios
-      .post("http://localhost:8080/api/product", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      .then((response) => {
-        console.log("Product added successfully:", response.data);
-        alert("Product added successfully");
-      })
-      .catch((error) => {
-        console.error("Error adding product:", error);
-        alert("Error adding product");
-      });
+  
+    try {
+      const res = await axios.post(
+        "http://k8s-ecommerc-ecommerc-beadc8ac6d-1700331625.ap-south-1.elb.amazonaws.com/api/add_product",
+        formData
+      );
+      alert("Product added successfully");
+      console.log(res.data);
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert("Error adding product");
+    }
   };
 
   return (
