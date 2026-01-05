@@ -37,8 +37,11 @@ public class ProductController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping("/product")
-    public ResponseEntity<?> addProduct(@RequestPart Product product, @RequestPart MultipartFile imageFile) {
+    @PostMapping(value = "/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> addProduct(
+            @RequestPart("product") Product product,
+            @RequestPart("image") MultipartFile imageFile) {
+
 
         try {
             System.out.println(product);
@@ -98,3 +101,4 @@ public class ProductController {
         return new ResponseEntity<>(products, HttpStatus.OK);
     }
 }
+
