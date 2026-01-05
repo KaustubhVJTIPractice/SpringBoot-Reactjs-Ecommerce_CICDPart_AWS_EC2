@@ -36,7 +36,7 @@ const AddProduct = () => {
   
     try {
       const res = await axios.post(
-        "http://k8s-ecommerc-ecommerc-beadc8ac6d-1700331625.ap-south-1.elb.amazonaws.com/api/add_product",
+        "http://k8s-ecommerc-ecommerc-beadc8ac6d-1700331625.ap-south-1.elb.amazonaws.com/api/product",
         formData
       );
       alert("Product added successfully");
