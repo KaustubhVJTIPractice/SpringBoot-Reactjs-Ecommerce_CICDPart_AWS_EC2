@@ -36,7 +36,7 @@ const AddProduct = () => {
   
     try {
       const res = await axios.post(
-        "/api/add_product",
+        "/api/product",
         formData
       );
       alert("Product added successfully");
