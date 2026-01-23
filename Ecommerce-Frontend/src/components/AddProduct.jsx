@@ -26,19 +26,30 @@ const AddProduct = () => {
 
   const submitHandler = async (event) => {
     event.preventDefault();
-  
+    // sanitize product fields so backend (Jackson) can deserialize types correctly
+    const sanitizedProduct = {
+      name: product.name || null,
+      brand: product.brand || null,
+      description: product.description || null,
+      category: product.category || null,
+      // convert numeric fields or set to null if empty
+      price: product.price === "" || product.price == null ? null : Number(product.price),
+      stockQuantity: product.stockQuantity === "" || product.stockQuantity == null ? null : parseInt(product.stockQuantity, 10),
+      // boolean
+      productAvailable: !!product.productAvailable,
+      // dates: send as null or ISO string if provided
+      releaseDate: product.releaseDate === "" || product.releaseDate == null ? null : product.releaseDate
+    };
+
     const formData = new FormData();
     formData.append("image", image);
     formData.append(
       "product",
-      new Blob([JSON.stringify(product)], { type: "application/json" })
+      new Blob([JSON.stringify(sanitizedProduct)], { type: "application/json" })
     );
-  
+
     try {
-      const res = await axios.post(
-        "/api/product",
-        formData
-      );
+      const res = await axios.post("/api/product", formData);
       alert("Product added successfully");
       console.log(res.data);
     } catch (err) {
