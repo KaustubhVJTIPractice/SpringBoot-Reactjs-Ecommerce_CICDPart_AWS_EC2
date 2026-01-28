@@ -26,17 +26,28 @@ const AddProduct = () => {
 
   const submitHandler = async (event) => {
     event.preventDefault();
+
+    // Validate required fields
+    if (!product.name || !product.name.trim()) {
+      alert("Product name is required");
+      return;
+    }
+    if (!image) {
+      alert("Please select an image");
+      return;
+    }
+
     // sanitize product fields so backend (Jackson) can deserialize types correctly
     const sanitizedProduct = {
-      name: product.name || null,
-      brand: product.brand || null,
-      description: product.description || null,
-      category: product.category || null,
-      // convert numeric fields or set to null if empty
-      price: product.price === "" || product.price == null ? null : Number(product.price),
-      stockQuantity: product.stockQuantity === "" || product.stockQuantity == null ? null : parseInt(product.stockQuantity, 10),
+      name: product.name.trim() || null,
+      brand: product.brand?.trim() || null,
+      description: product.description?.trim() || null,
+      category: product.category?.trim() || null,
+      // convert numeric fields - handle empty strings as null
+      price: product.price === "" || product.price == null ? null : parseFloat(product.price),
+      stockQuantity: product.stockQuantity === "" || product.stockQuantity == null ? 0 : parseInt(product.stockQuantity, 10),
       // boolean
-      productAvailable: !!product.productAvailable,
+      productAvailable: Boolean(product.productAvailable),
       // dates: send as null or ISO string if provided
       releaseDate: product.releaseDate === "" || product.releaseDate == null ? null : product.releaseDate
     };
@@ -52,9 +63,21 @@ const AddProduct = () => {
       const res = await axios.post("/api/product", formData);
       alert("Product added successfully");
       console.log(res.data);
+      // Reset form
+      setProduct({
+        name: "",
+        brand: "",
+        description: "",
+        price: "",
+        category: "",
+        stockQuantity: "",
+        releaseDate: "",
+        productAvailable: false,
+      });
+      setImage(null);
     } catch (err) {
-      console.error(err.response?.data || err.message);
-      alert("Error adding product");
+      console.error("Error details:", err.response?.data || err.message);
+      alert(`Error adding product: ${err.response?.data?.message || err.message}`);
     }
   };
 

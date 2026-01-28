@@ -1,6 +1,7 @@
 package com.cart.ecom_proj.controller;
 
 import com.cart.ecom_proj.model.Product;
+import com.cart.ecom_proj.model.ErrorResponse;
 import com.cart.ecom_proj.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -40,16 +41,30 @@ public class ProductController {
     @PostMapping(value = "/product", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> addProduct(
             @RequestPart("product") Product product,
-            @RequestPart("image") MultipartFile imageFile) {
-
+            @RequestPart(value = "image", required = false) MultipartFile imageFile) {
 
         try {
-            System.out.println(product);
-            Product product1 = service.addProduct(product, imageFile);
-            return new ResponseEntity<>(product1, HttpStatus.CREATED);
-        }
-        catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            // Validate required fields
+            if (product == null || product.getName() == null || product.getName().trim().isEmpty()) {
+                return new ResponseEntity<>(new ErrorResponse("Product name is required"), HttpStatus.BAD_REQUEST);
+            }
+
+            if (imageFile == null || imageFile.isEmpty()) {
+                return new ResponseEntity<>(new ErrorResponse("Image file is required"), HttpStatus.BAD_REQUEST);
+            }
+
+            System.out.println("[AddProduct] Received product: " + product);
+            System.out.println("[AddProduct] Image name: " + imageFile.getOriginalFilename() + ", Size: " + imageFile.getSize());
+
+            Product savedProduct = service.addProduct(product, imageFile);
+            System.out.println("[AddProduct] Successfully saved product with ID: " + savedProduct.getId());
+            return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+        } catch (Exception e) {
+            System.err.println("[AddProduct] Error: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>(
+                    new ErrorResponse("Error adding product: " + e.getMessage()),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
