@@ -72,29 +72,43 @@ public class ProductController {
     public ResponseEntity<byte[]> getImageByProductId(@PathVariable int productId){
 
         Product product = service.getProductById(productId);
+        
+        if (product == null || product.getImageDate() == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        
         byte[] imageFile = product.getImageDate();
+        String contentType = product.getImageType() != null ? product.getImageType() : "application/octet-stream";
 
         return ResponseEntity.ok()
-                .contentType(MediaType.valueOf(product.getImageType("")))
+                .contentType(MediaType.valueOf(contentType))
                 .body(imageFile);
     }
 
     @PutMapping("/product/{id}")
     public ResponseEntity<String> updateProduct(@PathVariable int id,
                                                 @RequestPart Product product,
-                                                @RequestPart MultipartFile imageFile){
+                                                @RequestPart(required = false) MultipartFile imageFile){
 
-        Product product1 = null;
         try {
-            product1 = service.updateProduct(id, product, imageFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if (product1 != null)
+            // Validate product exists
+            Product existingProduct = service.getProductById(id);
+            if (existingProduct == null) {
+                return new ResponseEntity<>("Product not found", HttpStatus.NOT_FOUND);
+            }
+            
+            // If no image provided, use existing image
+            if (imageFile == null || imageFile.isEmpty()) {
+                imageFile = null; // Let service handle null image
+            }
+            
+            Product updatedProduct = service.updateProduct(id, product, imageFile);
             return new ResponseEntity<>("Updated", HttpStatus.OK);
-        else
-            return new ResponseEntity<>("Failed to update", HttpStatus.BAD_REQUEST);
-
+        } catch (Exception e) {
+            System.err.println("[UpdateProduct] Error: " + e.getMessage());
+            e.printStackTrace();
+            return new ResponseEntity<>("Error updating product: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @DeleteMapping("/product/{id}")
